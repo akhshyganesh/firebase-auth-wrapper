@@ -10,13 +10,12 @@ import {
 } from "firebase/auth";
 
 const AuthContext = createContext();
-
-const REFRESH_TOKEN = '_fb_auth_tok'
+const REFRESH_TOKEN = '_fb_auth_tok';
 
 export const AuthProvider = ({ children, firebaseConfig }) => {
-  const [app, setApp] = useState(null);
+  const [app, setApp] = useState(() => initializeApp(firebaseConfig));
+  const [auth, setAuth] = useState(() => getAuth(app));
   const [error, setError] = useState(null);
-  const [auth, setAuth] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,93 +24,41 @@ export const AuthProvider = ({ children, firebaseConfig }) => {
     if (refreshToken) {
       window.sessionStorage.setItem(REFRESH_TOKEN, refreshToken);
     }
-  }, [refreshToken])
-
-  const genRefreshToken = async (user = currentUser) => {
-    if (user) {
-      try {
-        setLoading(true);
-        const token = await user.getIdToken(true)
-        setRefreshToken(token);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  }
+  }, [refreshToken]);
 
   useEffect(() => {
-    let appInstance = app;
-    let authInstance = auth;
-    if (!app) {
-      appInstance = initializeApp(firebaseConfig);
-      setApp(appInstance);
-      authInstance = getAuth(appInstance);
-      setAuth(authInstance);
-    }
-
-    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
-      genRefreshToken(user)
+      if (user) {
+        user.getIdToken(true).then(setRefreshToken).catch(console.error);
+      }
     });
-    
     return () => unsubscribe();
-  }, [firebaseConfig]);
+  }, [auth]);
 
-  const login = async (email, password) => {
+  const handleAuthOperation = async (operation, ...params) => {
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
-      genRefreshToken();
+      await operation(auth, ...params);
     } catch (error) {
       setError(error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  const signup = async (email, password) => {
-    try {
-      setLoading(true);
-      await createUserWithEmailAndPassword(auth, email, password);
-      genRefreshToken();
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  const login = (email, password) => handleAuthOperation(signInWithEmailAndPassword, email, password);
+  const signup = (email, password) => handleAuthOperation(createUserWithEmailAndPassword, email, password);
   const logout = async () => {
-    try {
-      setLoading(true);
-      await signOut(auth);
-      setRefreshToken(null);
-      window.sessionStorage.removeItem(REFRESH_TOKEN);
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const resetPassword = async (email) => {
-    try {
-      setLoading(true);
-      await sendPasswordResetEmail(auth, email);
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+    await handleAuthOperation(signOut)
+    window.sessionStorage.removeItem(REFRESH_TOKEN);
+  };
+  const resetPassword = (email) => handleAuthOperation(sendPasswordResetEmail, email);
 
   const value = {
     loading,
     error,
-    genRefreshToken,
     currentUser,
     login,
     signup,
@@ -127,8 +74,5 @@ export const AuthProvider = ({ children, firebaseConfig }) => {
   );
 };
 
-export const getRefreshToken = () => window.sessionStorage.getItem(REFRESH_TOKEN)
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const getRefreshToken = () => window.sessionStorage.getItem(REFRESH_TOKEN);
+export const useAuth = () => useContext(AuthContext);

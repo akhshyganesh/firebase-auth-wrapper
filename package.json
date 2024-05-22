@@ -1,0 +1,39 @@
+{
+  "name": "firebase-auth-wrapper",
+  "version": "0.0.1",
+  "description": "Firebase Authentication Wrapper with Self State to Manage and Gen Refresh Tokens",
+  "main": "src/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "babel src --out-dir dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akhshyganesh/firebase-auth-wrapper.git"
+  },
+  "keywords": [
+    "firebase",
+    "auth",
+    "wrapper",
+    "react-firebase",
+    "authentication"
+  ],
+  "author": "akhshyganesh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/akhshyganesh/firebase-auth-wrapper/issues"
+  },
+  "homepage": "https://github.com/akhshyganesh/firebase-auth-wrapper#readme",
+  "dependencies": {
+    "firebase": "^10.12.1",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.5",
+    "@babel/core": "^7.24.5",
+    "@babel/preset-env": "^7.24.5",
+    "@babel/preset-react": "^7.24.1"
+  }
+}
